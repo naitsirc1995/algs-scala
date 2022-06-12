@@ -175,5 +175,4 @@ object ScalaRecap extends App {
   // the auto-conversion is done at compile time
 
 
-
 }
