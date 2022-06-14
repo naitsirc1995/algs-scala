@@ -3,6 +3,8 @@ package com.rockthejvm.lists
 import scala.annotation.tailrec
 
 sealed abstract class RList[+T] {
+  /*
+  * Standard functions*/
   def head:T
   def tail:RList[T]
   def isEmpty:Boolean
@@ -10,6 +12,8 @@ sealed abstract class RList[+T] {
   def ::[S>:T](elem:S):RList[S] = new ::(elem,this)
 
   def apply(index:Int):T
+
+  def length:Int
 }
 
 case object RNill extends RList[Nothing] {
@@ -21,6 +25,7 @@ case object RNill extends RList[Nothing] {
 
   override def apply(index: Int): Nothing = throw new NoSuchElementException
 
+  override def length: Int = 0
 }
 
 case class ::[+T](override val head:T, override val tail:RList[T]) extends RList[T] {
@@ -54,13 +59,40 @@ case class ::[+T](override val head:T, override val tail:RList[T]) extends RList
     if (index < 0 ) throw new NoSuchElementException
     else applyTailRec(this,0)
   }
+
+  override def length: Int = {
+    /*
+    [1,2,3,4,5].length = lengthTailRec([1,2,3,4,5],0)
+    = lengthTailRec([2,3,4,5],1)
+    = lengthTailRec([3,4,5],2)
+    = lengthTailRec([4,5],3)
+    = lengthTailRec([5],4)
+    = lengthTailRec([],5)
+    = 5
+
+    Complexity: O(N)
+    * */
+    @tailrec
+    def lengthTailRec(remainingList:RList[T],accumulator:Int):Int = {
+      if (remainingList.isEmpty) accumulator
+      else lengthTailRec(remainingList.tail,accumulator+1)
+    }
+
+    lengthTailRec(this,0)
+  }
 }
 
 object ListProblems extends App {
   val aSmallList = 1 :: 2 :: 3 :: RNill // Rnill.::(3).::(2)::.::(1)
 
+  // test get-kth
   println(aSmallList.apply(0))
   println(aSmallList.apply(1))
   println(aSmallList.apply(2))
   //println(aSmallList.apply(90))
+
+  println("\n")
+  // test length
+  println("Now a length example")
+  println(aSmallList.length)
 }
