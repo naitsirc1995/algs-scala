@@ -1,6 +1,7 @@
 package com.rockthejvm.lists
 
 import scala.annotation.tailrec
+import scala.collection.immutable.Stream.Empty
 
 sealed abstract class RList[+T] {
   /*
@@ -16,6 +17,13 @@ sealed abstract class RList[+T] {
   def length:Int
 
   def reverse:RList[T]
+
+  // concatenate another list to this one
+
+  def ++[S>:T](anotherList:RList[S]):RList[S]
+
+  // remove an element at a given index, return a NEW list
+  def removeAt(index:Int):RList[T]
 }
 
 case object RNill extends RList[Nothing] {
@@ -30,6 +38,12 @@ case object RNill extends RList[Nothing] {
   override def length: Int = 0
 
   override def reverse: RList[Nothing] = RNill
+
+  override def ++[S>:Nothing](anotherList:RList[S]):RList[S] = anotherList
+
+  override def removeAt(index: Int): RList[Nothing] = RNill
+
+
 }
 
 case class ::[+T](override val head:T, override val tail:RList[T]) extends RList[T] {
@@ -94,6 +108,35 @@ case class ::[+T](override val head:T, override val tail:RList[T]) extends RList
     }
     reverseTailRec(this,RNill)
   }
+
+  override def ++[S>:T](anotherList:RList[S]):RList[S] = {
+
+    def concatTailrec(remainingList:RList[S], acc:RList[S]):RList[S] = {
+      if (remainingList.isEmpty) acc
+      else (concatTailrec(remainingList.tail, remainingList.head :: acc))
+    }
+
+    concatTailrec(anotherList,this.reverse).reverse
+  }
+
+  override def removeAt(index:Int):RList[T] = {
+
+    /*
+      [1,2,3,4,5].removeAt(2) = removeAtTailrec([1,2,3,4,5],0,[])
+      = removeAtTailrec([2,3,4,5],1,[1])
+      = removeAtTailrec([3,4,5],2,[1,2])
+      = [1,2] ++ [3,4,5]
+    * */
+    @tailrec
+    def removeAtTailrec(remaining:RList[T],currentIndex:Int,predecesors:RList[T]):RList[T] = {
+      if (currentIndex == index) predecesors.reverse ++ remaining.tail
+      else if (remaining.isEmpty) predecesors.reverse
+      else removeAtTailrec(remaining.tail,currentIndex+1,remaining.head :: predecesors)
+    }
+
+    if (index < 0 ) this
+    else removeAtTailrec(this,0,RNill)
+  }
 }
 
 object RList {
@@ -110,6 +153,9 @@ object RList {
 object ListProblems extends App {
   val aSmallList = 1 :: 2 :: 3 :: RNill // Rnill.::(3).::(2)::.::(1)
   val aLargeList = RList.from(1 to 10000)
+
+  val concat1 = RList.from(1 to 3)
+  val concat2 = RList.from(4 to 5)
 
   // test get-kth
   println(aSmallList.apply(0))
@@ -128,6 +174,16 @@ object ListProblems extends App {
   println("Now testing revers")
   println(aSmallList.reverse)
   println(aLargeList.reverse)
+
+  println("\n")
+  println("Now testing the concat method")
+  println(aSmallList ++ aLargeList)
+  println(concat1 ++ concat2)
+
+  println("\n")
+  println("Now the removal part")
+  println(concat1.removeAt(2))
+  println(aLargeList.removeAt(13))
 
 
 }
